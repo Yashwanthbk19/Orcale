@@ -1,0 +1,75 @@
+Complex SQL Queries and Solutions
+1. Identify Customers with Multiple Orders in the Same Month
+SQL:
+SELECT FirstName, LastName, COUNT(*) AS OrderCount
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY FirstName, LastName, YEAR(o.OrderDate), MONTH(o.OrderDate)
+HAVING COUNT(*) > 1;
+2. Calculate Running Total of Order Amounts per Customer
+SQL:
+SELECT CustomerID, OrderDate, TotalAmount,
+       SUM(TotalAmount) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS RunningTotal
+FROM Orders;
+3. Most Frequent Product Purchased by Customers in Each City
+SQL:
+WITH ProductFrequency AS (
+    SELECT cu.City, cu.CustomerID, oi.ProductID, COUNT(*) AS PurchaseCount,
+           ROW_NUMBER() OVER (PARTITION BY cu.City, cu.CustomerID ORDER BY COUNT(*) DESC) AS rn
+    FROM Customers cu
+    JOIN Orders o ON cu.CustomerID = o.CustomerID
+    JOIN OrderItems oi ON o.OrderID = oi.OrderID
+    GROUP BY cu.City, cu.CustomerID, oi.ProductID
+)
+SELECT City, CustomerID, ProductID
+FROM ProductFrequency
+WHERE rn = 1;
+4. Employees Earning More Than Department Average
+SQL:
+SELECT e.FirstName, e.LastName, d.DepartmentName, e.Salary
+FROM Employees e
+JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE e.Salary > (
+    SELECT AVG(Salary)
+    FROM Employees
+    WHERE DepartmentID = e.DepartmentID
+);
+5. Top 2 Earners in Each Department
+SQL:
+WITH RankedSalaries AS (
+    SELECT e.FirstName, e.LastName, e.Salary, d.DepartmentName,
+           RANK() OVER (PARTITION BY e.DepartmentID ORDER BY e.Salary DESC) AS rk
+    FROM Employees e
+    JOIN Departments d ON e.DepartmentID = d.DepartmentID
+)
+SELECT DepartmentName, FirstName, LastName, Salary
+FROM RankedSalaries
+WHERE rk <= 2;
+6. Hierarchical Salary Sum Including Subordinates
+-- This uses a recursive CTE (works in systems like PostgreSQL or SQL Server):
+WITH RECURSIVE Subordinates AS (
+    SELECT EmployeeID, ManagerID, FirstName, LastName, Salary
+    FROM Employees
+    UNION ALL
+    SELECT e.EmployeeID, e.ManagerID, e.FirstName, e.LastName, e.Salary
+    FROM Employees e
+    JOIN Subordinates s ON e.ManagerID = s.EmployeeID
+)
+SELECT ManagerID AS EmployeeID, SUM(Salary) AS TotalSubordinateSalary
+FROM Subordinates
+WHERE ManagerID IS NOT NULL
+GROUP BY ManagerID;
+7. Identify Consecutive Events for the Same Day
+SQL:
+SELECT e1.EventName AS EventName1, e2.EventName AS EventName2
+FROM Events e1
+JOIN Events e2 ON DATE(e1.EndTime) = DATE(e2.StartTime)
+              AND e1.EndTime = e2.StartTime;
+8. Maximum Concurrent Events at Any Time
+SQL:
+SELECT MAX(ConcurrentCount) AS MaxConcurrentEvents
+FROM (
+    SELECT StartTime AS TimePoint, 
+           (SELECT COUNT(*) FROM Events e2 WHERE e1.StartTime BETWEEN e2.StartTime AND e2.EndTime) AS ConcurrentCount
+    FROM Events e1
+) AS Temp;
