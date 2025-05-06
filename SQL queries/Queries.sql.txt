@@ -73,3 +73,5 @@ FROM (
            (SELECT COUNT(*) FROM Events e2 WHERE e1.StartTime BETWEEN e2.StartTime AND e2.EndTime) AS ConcurrentCount
     FROM Events e1
 ) AS Temp;
+
+Select from employee where emp > lastupdatetimestamp;
