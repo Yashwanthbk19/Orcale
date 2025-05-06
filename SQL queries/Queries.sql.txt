@@ -23,7 +23,7 @@ WITH ProductFrequency AS (
 )
 SELECT City, CustomerID, ProductID
 FROM ProductFrequency
-WHERE rn = 1;
+WHERE rn = 2;
 4. Employees Earning More Than Department Average
 SQL:
 SELECT e.FirstName, e.LastName, d.DepartmentName, e.Salary
